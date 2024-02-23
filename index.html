@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title></title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <section spellcheck="false">
+
+        <textarea type="text" id="code" spellcheck=”false” placeholder="Write Your Code Here..."></textarea>
+
+        <div class="optionBtn">
+            <select name="code" id="select-lang" onchange="changeLanguage()">
+                <option value="js"> JavaScript </option>
+                <option value="c"> C </option>
+                <option value="cpp"> C++ </option>
+            </select>
+            <button onclick="runCode()" id="runCode"> run </button>
+        </div>
+
+    </section>
+
+    <div class="output">
+        <h4>Terminal (read only)</h4>
+        <div id="output"></div>
+    </div>
+
+</body>
+
+<script>
+    let language = document.getElementById("select-lang").value;
+
+    function changeLanguage(){
+        language = document.getElementById("select-lang").value;
+    }
+
+    async function runCode() {
+        //get code from input
+        let submitedCode = document.querySelector("#code").value.toString();
+        submitedCode = parseCode(submitedCode);
+
+        // hit the /submission
+        let data = {
+            problemId: "1",
+            submission: {
+                language: language,
+                code: submitedCode
+            }
+        }
+        let options = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            body: JSON.stringify(data)
+        }
+        let res = await fetch("http://localhost:3010/submissions", options);
+
+        // get the output as a responce from the server
+        let output = await res.json();
+
+        // show output in the output box
+        let outputBox = document.getElementById('output');
+        outputBox.innerText = parseLogs(output.result);
+
+        // chage color according to sucess status
+        if(output.sucess){
+            outputBox.style.color = "lightgreen";
+            outputBox.scrollTop = outputBox.scrollHeight; // scroll to bottom
+        }else{
+            outputBox.style.color = "lightcoral";
+            outputBox.scrollTop = outputBox.scrollHeight; // scroll to bottom
+        }
+
+        // hide terminal heading
+        document.querySelector(".output h4").style.display = "none";
+    }
+
+    function parseCode(code){
+        if(language == "c" || language == "cpp"){
+            return code.replace(/"/g, '\\"');
+        }else{
+            return code;
+        }
+    }
+
+    function parseLogs(logs){
+        if(language == "js"){
+            return logs.replace(/\[90m/g, "... ")
+                        .replace(/\[39m/g, "")
+                        .replace(/\[33m/g, "");
+        }
+        else if (language == "c" || language == "cpp") {
+            console.log("i am working")
+            return logs.replace(/\x1B\[[0-9;]*[m]/g, "")
+                        .replace(/\[K/g, "");
+        }
+        else{
+            return logs
+        }
+    }
+
+</script>
+
+</html>
